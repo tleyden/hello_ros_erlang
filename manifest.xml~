@@ -1,0 +1,14 @@
+<package>
+  <description brief="hello_ros_erlang">
+
+     hello_ros_erlang
+
+  </description>
+  <author>Traun Leyden</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/hello_ros_erlang</url>
+
+</package>
+
+
