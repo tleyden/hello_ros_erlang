@@ -1,0 +1,10 @@
+
+roscore &
+rosrun turtlesim turtlesim_node &
+epmd -daemon &
+
+echo "waiting for other stuff to startup  .."
+sleep 5
+
+echo "running python script .."
+./hello_ros_erlang.py

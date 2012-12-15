@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 
-## This is a "hello world" for communicating from ROS<->Erlang, via Python
-## 
-## This python process subscribes to a ROS topic, and forwards whatever it
-## receives to an Erlang node.
+## See README.md for description
 
 import sys, getopt, types
   
@@ -15,75 +12,59 @@ from turtlesim.msg import Pose
 
 from py_interface import erl_node, erl_opts, erl_eventhandler, erl_term
 
-def callback(data):
+ERLANG_NODE_NAME = 'enode1@localhost'
+SELF_NODE_NAME = "hello_ros_erlang_node@localhost"
+ERLANG_COOKIE = "hello_ros_erlang_cookie"
+ERLANG_MAILBOX = "hello_ros_erlang_mailbox"
+ROS_NODE_NAME = 'hello_ros_erlang'
+ROS_TOPIC_NAME = "/turtle1/pose"
+
+def send_turtle_pose_erlang(data):
     global mailbox
-    print("callback called")
-    rospy.loginfo(rospy.get_caller_id()+"x: %s y: %s", data.x, data.y)
-    node_name_atom = erl_term.ErlAtom('enode1@localhost')
-    remote_pid = erl_term.ErlPid(node=node_name_atom, id=38, serial=0, creation=2)
+    node_name_atom = erl_term.ErlAtom(ERLANG_NODE_NAME)
+    remote_pid = erl_term.ErlPid(node=node_name_atom, id=38, serial=0, creation=1)
     msg = erl_term.ErlAtom("%s" % (data.x))
     mailbox.Send(remote_pid, msg)
+    #  tuple(DEST-REGNAME, DEST-NODE)
     print "Sent message to %s" % (remote_pid)
-    
-def erlang_timer_callback(*k, **kw):
-    global mailbox
-    print "Timer callback called"
-    #node_name_atom = erl_term.ErlAtom('enode1@localhost')
-    #remote_pid = erl_term.ErlPid(node=node_name_atom, id=38, serial=0, creation=2)
-    #msg = erl_term.ErlAtom("testmsg")
-    #m.Send(remote_pid, msg)
-    #print "Sent message to %s" % (remote_pid)
+
+def ros_receive_turtle_pose(data):
+    #rospy.loginfo(rospy.get_caller_id()+"x: %s y: %s", data.x, data.y)
+    send_turtle_pose_erlang(data)
+    pass
 
 def erlang_mailbox_message_callback(msg, *k, **kw):
     print "Incoming msg=%s (k=%s, kw=%s)" % (`msg`, `k`, `kw`)
-    if type(msg) == types.TupleType:
-        if len(msg) == 2:
-            print "len is 2"
-            if erl_term.IsErlPid(msg[0]):
-                dest = msg[0]
-                print "Dest: %s" % (dest,)
+    payload = msg[1]
+    if isinstance(payload, erl_term.ErlAtom) and str(payload) == "stop":
+        global evhand
+        print "Exiting"
+        evhand.StopLooping()
 
+def init_erlang_node():
+    node = erl_node.ErlNode(SELF_NODE_NAME, erl_opts.ErlNodeOpts(cookie=ERLANG_COOKIE))
+    node.Publish()
+    return node
 
-def start_erlang_node_loop():
-
-    # note: erlang port mapper deamon (epmd) must be running
-
+def init_erlang_mailbox(node):
     global mailbox
+    mailbox = node.CreateMBox(erlang_mailbox_message_callback)
+    mailbox.RegisterName(ERLANG_MAILBOX)
 
-    hostName = "localhost"
-    ownNodeName = "py_interface_test"
-    cookie = "cookie"
-
-    print "Creating erlang node with name %s..." % ownNodeName
-    n = erl_node.ErlNode(ownNodeName, erl_opts.ErlNodeOpts(cookie=cookie))
-    n.Publish()
-    mailbox = n.CreateMBox(erlang_mailbox_message_callback)
-    mailbox.RegisterName("p")
+def init_erlang_event_handler():
+    global evhand
     evhand = erl_eventhandler.GetEventHandler()
+    evhand.Loop()    
 
-    evhand.AddTimerEvent(1, erlang_timer_callback)
+def init_erlang():
+    node = init_erlang_node()
+    init_erlang_mailbox(node)
+    init_erlang_event_handler()
 
+def init_ros():
+    rospy.init_node(ROS_NODE_NAME, anonymous=True)
+    rospy.Subscriber(ROS_TOPIC_NAME, Pose, ros_receive_turtle_pose)
 
-    evhand.Loop()
-
-
-
-def listener():
-
-    # in ROS, nodes are unique named. If two nodes with the same
-    # node are launched, the previous one is kicked off. The 
-    # anonymous=True flag means that rospy will choose a unique
-    # name for our 'talker' node so that multiple talkers can
-    # run simultaenously.
-    rospy.init_node('listener', anonymous=True)
-
-    rospy.Subscriber("/turtle1/pose", Pose, callback)
-
-    start_erlang_node_loop()
-
-    # spin() simply keeps python from exiting until this node is stopped
-    # rospy.spin()
-        
 if __name__ == '__main__':
-    print("main called")
-    listener()
+    init_ros()
+    init_erlang()  # blocks
