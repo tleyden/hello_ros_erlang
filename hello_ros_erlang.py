@@ -12,7 +12,8 @@ from turtlesim.msg import Pose
 
 from py_interface import erl_node, erl_opts, erl_eventhandler, erl_term
 
-ERLANG_NODE_NAME = 'enode1@localhost'
+ERLANG_REMOTE_NODE_REGISTERED_PROCESS = 'enode1_process'
+ERLANG_REMOTE_NODE_NAME = 'enode1@localhost'
 SELF_NODE_NAME = "hello_ros_erlang_node@localhost"
 ERLANG_COOKIE = "hello_ros_erlang_cookie"
 ERLANG_MAILBOX = "hello_ros_erlang_mailbox"
@@ -21,12 +22,13 @@ ROS_TOPIC_NAME = "/turtle1/pose"
 
 def send_turtle_pose_erlang(data):
     global mailbox
-    node_name_atom = erl_term.ErlAtom(ERLANG_NODE_NAME)
+    node_name_atom = erl_term.ErlAtom(ERLANG_REMOTE_NODE_NAME)
     remote_pid = erl_term.ErlPid(node=node_name_atom, id=38, serial=0, creation=1)
     msg = erl_term.ErlAtom("%s" % (data.x))
-    mailbox.Send(remote_pid, msg)
-    #  tuple(DEST-REGNAME, DEST-NODE)
-    print "Sent message to %s" % (remote_pid)
+    remote_process_atom = erl_term.ErlAtom("%s" % ERLANG_REMOTE_NODE_REGISTERED_PROCESS)
+    dest = erl_term.ErlTuple([remote_process_atom, node_name_atom])
+    mailbox.Send(dest, msg)
+    print "Sent message to (%s,%s)" % (ERLANG_REMOTE_NODE_REGISTERED_PROCESS, ERLANG_REMOTE_NODE_NAME)
 
 def ros_receive_turtle_pose(data):
     #rospy.loginfo(rospy.get_caller_id()+"x: %s y: %s", data.x, data.y)
