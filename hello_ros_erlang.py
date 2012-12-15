@@ -20,6 +20,21 @@ ERLANG_COOKIE = "hello_ros_erlang_cookie"
 ERLANG_MAILBOX = "hello_ros_erlang_mailbox"
 ROS_NODE_NAME = 'hello_ros_erlang'
 ROS_TOPIC_NAME = "/turtle1/pose"
+VERBOSE = True
+
+def ros_receive_topic_message(data):
+    if VERBOSE:
+        rospy.loginfo("Ros topic messsage " + rospy.get_caller_id() + " x: %s y: %s", data.x, data.y)
+    send_turtle_pose_erlang(data)
+
+def erlang_node_receive_message(msg, *k, **kw):
+    if VERBOSE:
+        print "Incoming msg=%s (k=%s, kw=%s)" % (`msg`, `k`, `kw`)
+    payload = msg[1]
+    if isinstance(payload, erl_term.ErlAtom) and str(payload) == "stop":
+        global evhand
+        print "Exiting"
+        evhand.StopLooping()
 
 def send_turtle_pose_erlang(data):
     global mailbox
@@ -29,20 +44,8 @@ def send_turtle_pose_erlang(data):
     remote_process_atom = erl_term.ErlAtom("%s" % ERLANG_REMOTE_NODE_REGISTERED_PROCESS)
     dest = erl_term.ErlTuple([remote_process_atom, node_name_atom])
     mailbox.Send(dest, msg)
-    print "Sent message to (%s,%s)" % (ERLANG_REMOTE_NODE_REGISTERED_PROCESS, ERLANG_REMOTE_NODE_NAME)
-
-def ros_receive_turtle_pose(data):
-    #rospy.loginfo(rospy.get_caller_id()+"x: %s y: %s", data.x, data.y)
-    send_turtle_pose_erlang(data)
-    pass
-
-def erlang_mailbox_message_callback(msg, *k, **kw):
-    print "Incoming msg=%s (k=%s, kw=%s)" % (`msg`, `k`, `kw`)
-    payload = msg[1]
-    if isinstance(payload, erl_term.ErlAtom) and str(payload) == "stop":
-        global evhand
-        print "Exiting"
-        evhand.StopLooping()
+    if VERBOSE:
+        print "Sent message to (%s,%s)" % (ERLANG_REMOTE_NODE_REGISTERED_PROCESS, ERLANG_REMOTE_NODE_NAME)
 
 def init_erlang_node():
     node = erl_node.ErlNode(SELF_NODE_NAME, erl_opts.ErlNodeOpts(cookie=ERLANG_COOKIE))
@@ -51,7 +54,7 @@ def init_erlang_node():
 
 def init_erlang_mailbox(node):
     global mailbox
-    mailbox = node.CreateMBox(erlang_mailbox_message_callback)
+    mailbox = node.CreateMBox(erlang_node_receive_message)
     mailbox.RegisterName(ERLANG_MAILBOX)
 
 def init_erlang_event_handler():
@@ -66,7 +69,7 @@ def init_erlang():
 
 def init_ros():
     rospy.init_node(ROS_NODE_NAME, anonymous=True)
-    rospy.Subscriber(ROS_TOPIC_NAME, Pose, ros_receive_turtle_pose)
+    rospy.Subscriber(ROS_TOPIC_NAME, Pose, ros_receive_topic_message)
 
 if __name__ == '__main__':
     init_ros()
