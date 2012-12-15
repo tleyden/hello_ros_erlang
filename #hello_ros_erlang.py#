@@ -58,14 +58,13 @@ def start_erlang_node_loop():
     n = erl_node.ErlNode(ownNodeName, erl_opts.ErlNodeOpts(cookie=cookie))
     n.Publish()
     mailbox = n.CreateMBox(erlang_mailbox_message_callback)
-    mailbox.RegisterName("p")
+    mailbox.RegisterName("hello_ros_erlang")
     evhand = erl_eventhandler.GetEventHandler()
 
     evhand.AddTimerEvent(1, erlang_timer_callback)
 
 
     evhand.Loop()
-
 
 
 def listener():
