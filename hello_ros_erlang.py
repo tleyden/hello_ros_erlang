@@ -3,9 +3,9 @@
 ## This is a "hello world" for communicating from ROS<->Erlang, via Python
 ## 
 ## This python process subscribes to a ROS topic, and forwards whatever it
-## receives to an Erlang node
+## receives to an Erlang node.
   
-PKG = 'rospy_tutorials' # this package name
+PKG = 'hello_ros_erlang' # this package name
 import roslib; roslib.load_manifest(PKG)
 
 import rospy
