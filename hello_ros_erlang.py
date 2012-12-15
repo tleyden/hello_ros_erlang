@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-## See README.md for description
+## Reads turtle coordinates from a ros topic and forwards to an erlang node
+## See README.md for more details
 
 import sys, getopt, types
   
@@ -24,7 +25,7 @@ def send_turtle_pose_erlang(data):
     global mailbox
     node_name_atom = erl_term.ErlAtom(ERLANG_REMOTE_NODE_NAME)
     remote_pid = erl_term.ErlPid(node=node_name_atom, id=38, serial=0, creation=1)
-    msg = erl_term.ErlAtom("%s" % (data.x))
+    msg = erl_term.ErlNumber(data.x)
     remote_process_atom = erl_term.ErlAtom("%s" % ERLANG_REMOTE_NODE_REGISTERED_PROCESS)
     dest = erl_term.ErlTuple([remote_process_atom, node_name_atom])
     mailbox.Send(dest, msg)
