@@ -52,3 +52,7 @@ Start the erlang shell:
 
     erl -sname enode1@localhost -setcookie hello_ros_erlang_cookie -s hello_ros_erlang start
 
+
+## Run Behavior
+
+On the erlang shell, you should see messages about the turtle's current position.  If you move the turtle, the position will be different.  If you don't see any messages on the erlang shell, then something is broken.
