@@ -10,6 +10,10 @@
 This python process subscribes to a ROS topic, and forwards whatever it
 receives to an Erlang node via py-interface
 
+## What it does
+
+Not much, really.  It subscribes to a ROS topic, and forwards any messages received to an erlang node, which simply prints them out.
+
 ## Dependencies
 
 - ros
