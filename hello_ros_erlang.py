@@ -51,6 +51,12 @@ def send_turtle_pose_erlang(data):
     node_name_atom = erl_term.ErlAtom(ERLANG_REMOTE_NODE_NAME)
     remote_pid = erl_term.ErlPid(node=node_name_atom, id=38, serial=0, creation=1)
     msg_data = erl_term.ErlNumber(data.x)
+    pose = [erl_term.ErlNumber(data.x), 
+            erl_term.ErlNumber(data.y),
+            erl_term.ErlNumber(data.theta),
+            erl_term.ErlNumber(data.linear_velocity),
+            erl_term.ErlNumber(data.angular_velocity)]
+    msg_data = erl_term.ErlTuple(pose)
     self_node_name = erl_term.ErlAtom("%s" % SELF_NODE_NAME)
     self_reg_process = erl_term.ErlAtom("%s" % SELF_NODE_REGISTERED_PROCESS)
     return_addr = erl_term.ErlTuple([self_node_name, self_reg_process])
