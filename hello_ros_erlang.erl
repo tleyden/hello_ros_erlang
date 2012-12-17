@@ -4,6 +4,15 @@
 %% Receives turtle coordinates that were forwarded from a ros topic
 
 start() ->
+    connect_to_remote_node().
+
+stop() ->
+    {hello_ros_erlang_mailbox,'hello_ros_erlang_node@localhost'} ! {self(), stop},
+    enode1_process ! stop,
+    unregister(enode1_process).
+
+connect_to_remote_node() ->
+    %% in order to be able to receive messages from hello_ros_erlang.py, we must connect
     ConnectedRemoteNode = net_kernel:connect('hello_ros_erlang_node@localhost'),
     case ConnectedRemoteNode of
 	true ->
@@ -12,11 +21,6 @@ start() ->
 	false ->
 	    io:format("Could not connect to Python hello_ros_erlang_node, is it running? ~n")
     end.
-
-stop() ->
-    {hello_ros_erlang_mailbox,'hello_ros_erlang_node@localhost'} ! {self(), stop},
-    enode1_process ! stop,
-    unregister(enode1_process).
 
 loop() ->
     receive 
