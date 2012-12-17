@@ -26,7 +26,9 @@ loop() ->
     receive 
 	stop ->
 	    io:format("Stopping loop~n");
-	TurtleXPosition ->
+	TurtleMessage ->
+	    { {SenderNodeName, SenderProcessName}, TurtleXPosition } = TurtleMessage,
+	    io:format("Sender Node Name: ~p Process Name: ~p~n", [SenderNodeName, SenderProcessName]),
 	    TurtleXPositionString = io_lib:format("~.1f",[TurtleXPosition]),
 	    io:format("Turtle X Pos: ~p~n", TurtleXPositionString),
 	    loop()

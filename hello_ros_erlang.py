@@ -17,7 +17,7 @@ ERLANG_REMOTE_NODE_REGISTERED_PROCESS = 'enode1_process'
 ERLANG_REMOTE_NODE_NAME = 'enode1@localhost'
 SELF_NODE_NAME = "hello_ros_erlang_node@localhost"
 ERLANG_COOKIE = "hello_ros_erlang_cookie"
-ERLANG_MAILBOX = "hello_ros_erlang_mailbox"
+SELF_NODE_REGISTERED_PROCESS = "hello_ros_erlang_mailbox"
 ROS_NODE_NAME = 'hello_ros_erlang'
 ROS_TOPIC_NAME = "/turtle1/pose"
 VERBOSE = True
@@ -40,7 +40,11 @@ def send_turtle_pose_erlang(data):
     global mailbox
     node_name_atom = erl_term.ErlAtom(ERLANG_REMOTE_NODE_NAME)
     remote_pid = erl_term.ErlPid(node=node_name_atom, id=38, serial=0, creation=1)
-    msg = erl_term.ErlNumber(data.x)
+    msg_data = erl_term.ErlNumber(data.x)
+    self_node_name = erl_term.ErlAtom("%s" % SELF_NODE_NAME)
+    self_reg_process = erl_term.ErlAtom("%s" % SELF_NODE_REGISTERED_PROCESS)
+    return_addr = erl_term.ErlTuple([self_node_name, self_reg_process])
+    msg = erl_term.ErlTuple([return_addr, msg_data])
     remote_process_atom = erl_term.ErlAtom("%s" % ERLANG_REMOTE_NODE_REGISTERED_PROCESS)
     dest = erl_term.ErlTuple([remote_process_atom, node_name_atom])
     mailbox.Send(dest, msg)
@@ -55,7 +59,7 @@ def init_erlang_node():
 def init_erlang_mailbox(node):
     global mailbox
     mailbox = node.CreateMBox(erlang_node_receive_message)
-    mailbox.RegisterName(ERLANG_MAILBOX)
+    mailbox.RegisterName(SELF_NODE_REGISTERED_PROCESS)
 
 def init_erlang_event_handler():
     global evhand
