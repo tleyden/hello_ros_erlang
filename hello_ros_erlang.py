@@ -10,6 +10,7 @@ import roslib; roslib.load_manifest(PKG)
 import rospy
 from std_msgs.msg import String
 from turtlesim.msg import Pose
+from turtlesim.msg import Velocity
 
 from py_interface import erl_node, erl_opts, erl_eventhandler, erl_term
 
@@ -19,7 +20,8 @@ SELF_NODE_NAME = "hello_ros_erlang_node@localhost"
 ERLANG_COOKIE = "hello_ros_erlang_cookie"
 SELF_NODE_REGISTERED_PROCESS = "hello_ros_erlang_mailbox"
 ROS_NODE_NAME = 'hello_ros_erlang'
-ROS_TOPIC_NAME = "/turtle1/pose"
+ROS_TOPIC_POSE = "/turtle1/pose"
+ROS_TOPIC_COMMAND_VELOCITY = "/turtle1/command_velocity"
 VERBOSE = True
 
 def ros_receive_topic_message(data):
@@ -28,13 +30,21 @@ def ros_receive_topic_message(data):
     send_turtle_pose_erlang(data)
 
 def erlang_node_receive_message(msg, *k, **kw):
+    global evhand
     if VERBOSE:
         print "Incoming msg=%s (k=%s, kw=%s)" % (`msg`, `k`, `kw`)
-    payload = msg[1]
-    if isinstance(payload, erl_term.ErlAtom) and str(payload) == "stop":
-        global evhand
+    msg_type = msg[1]
+    if str(msg_type) == "stop":
         print "Exiting"
         evhand.StopLooping()
+    elif str(msg_type) == "command_velocity":
+        global publisher_command_velocity
+        velocity_tuple = msg[2]
+        # velocity = Velocity(velocity_tuple)
+        if VERBOSE:
+            print "Moving the turtle"
+        publisher_command_velocity.publish(velocity_tuple[0], velocity_tuple[1])
+        
 
 def send_turtle_pose_erlang(data):
     global mailbox
@@ -61,20 +71,19 @@ def init_erlang_mailbox(node):
     mailbox = node.CreateMBox(erlang_node_receive_message)
     mailbox.RegisterName(SELF_NODE_REGISTERED_PROCESS)
 
-def init_erlang_event_handler():
+def run_erlang_event_handler():
     global evhand
     evhand = erl_eventhandler.GetEventHandler()
     evhand.Loop()    
 
-def init_erlang():
-    node = init_erlang_node()
-    init_erlang_mailbox(node)
-    init_erlang_event_handler()
-
 def init_ros():
+    global publisher_command_velocity
     rospy.init_node(ROS_NODE_NAME, anonymous=True)
-    rospy.Subscriber(ROS_TOPIC_NAME, Pose, ros_receive_topic_message)
+    rospy.Subscriber(ROS_TOPIC_POSE, Pose, ros_receive_topic_message)
+    publisher_command_velocity = rospy.Publisher(ROS_TOPIC_COMMAND_VELOCITY, Velocity)
 
 if __name__ == '__main__':
     init_ros()
-    init_erlang()  # blocks
+    node = init_erlang_node()
+    init_erlang_mailbox(node)
+    run_erlang_event_handler() # blocks
